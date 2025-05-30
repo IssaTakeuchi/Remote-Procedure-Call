@@ -43,12 +43,20 @@ def reverse(s: str):
         return s[s.__len__()-1] + reverse(s[0:s.__len__()-1]) 
 
 # 2 つの文字列を入力として受け取り，2 つの入力文字列が互いにアナグラムであるかどうかを示すブール値を返す。
-def validAnagram(s1:str,s2;str):
-    if s1.__len__() != s2.__len__():
+def validAnagram(s1:str,s2:str):
+    s1 = s1.lower().replace(" ","")
+    s2 = s2.lower().replace(" ","")
+    if len(s1) != len(s2):
         return False
-    else :
-        
+    
+    s1Counter = {}
+    s2Counter = {}
 
+    for i in range(len(s1)):
+        s1Counter[s1[i]] =  1 + s1Counter.get(s1[i],0) 
+        s2Counter[s2[i]] =  1 + s2Counter.get(s2[i],0) 
+        
+    return s1Counter == s2Counter
 
 
 
