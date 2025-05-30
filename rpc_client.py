@@ -17,7 +17,7 @@ client.on('data',(data) => {
 
 // エラーが発声したときの処理
 client.on('error',(err) => {
-    console.error('エラーが発声しました：',err);
+    console.error('エラーが発生しました：',err);
 });
 
 // 接続が終了したときの処理
