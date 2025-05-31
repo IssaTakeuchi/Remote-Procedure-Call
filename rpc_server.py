@@ -1,31 +1,30 @@
 import socket
 import os
 import math
+import json
 
 class connectSocket:
     # ソケット作成から接続要求まで
-    def init():
-        sock = socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
+    def __init__(self):
+        self.server_address = '/tmp/socket_file'
+        self.sock = None
 
-        server_address = '/tmp/socket_file'
+    def init(self):
+        self.sock = socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
 
         try:
-            os.unlink(server_address)
+            os.unlink(self.server_address)
         except FileNotFoundError:
             pass
         
-        print('Starting up on {}'.format(server_address))
+        print('Starting up on {}'.format(self.server_address))
 
-        sock.bind(server_address)
-        sock.listen(1)
+        self.sock.bind(self.server_address)
+        self.sock.listen(1)
 
-function_map = {
-    "floor" : floor,
-    "nroot" : nroot,
-    "reverse" : reverse,
-    "validAnagram" : validAnagram,
-    "sort" : sort,
-}
+        return self.sock
+
+
 
 # 10 進数 x を最も近い整数に切り捨て、その結果を整数で返す。
 def floor(x: float) -> int:
@@ -58,11 +57,64 @@ def validAnagram(s1:str,s2:str):
         
     return s1Counter == s2Counter
 
+def sort_strings(string_list : list[str]) -> list[str]:
+    if not isinstance(string_list,list) or not all(isinstance(item,str) for item in string_list):
+        raise ValueError("リスト内のすべての要素は文字列である必要があります。")
+    
+    # アルファベット順にソート
+    sorted_list = sorted(string_list)
+    return sorted_list
 
-
+functions = {
+    "floor" : floor,
+    "nroot" : nroot,
+    "reverse" : reverse,
+    "validAnagram" : validAnagram,
+    "sort" : sort_strings,
+}
 
 def main():
-    connectSocket.init()
+    server = connectSocket()
+    sock = server.init()
+
+    while True:
+        connection,client_address = sock.accept()
+        try:
+            print('connection from',client_address)
+
+            while True:
+                data = connection.recv(1024).decode('utf-8')
+                request_data = json.loads(data)
+
+                method_name = request_data.get("method_name")
+                arguments = request_data.get("arguments")
+                param_type = request_data.get("param_type")
+                request_id = request_data.get("id")
+
+                if method_name in functions:
+                    target_function = functions[method_name]
+                    if method_name == "sort":
+                        result = target_function(arguments)
+                    else:
+                        if isinstance(arguments,list):
+                            result = target_function(*arguments)
+                        else:
+                            result = target_function(arguments)
+                    responce = {
+                        "results" : result,
+                        "result_type": str(type(result).__name__),
+                        "id":request_id
+                    }
+                else:
+                    responce = {
+                        "error": "Method not found",
+                        "id":request_id
+                    }
+                connection.send(json.dumps(responce).encode('utf-8'))
+                
+        finally:
+            print("Closing current connection")
+            connection.close()
 
 if __name__ == "__main__":
     main()
